@@ -1,0 +1,6 @@
+Patient_ID,Age,Gender,Infection_Status
+101,45,Male,Infected
+102,30,Female,Recovered
+103,50,Male,Deceased
+104,25,Female,Infected
+105,40,Male,Recovered

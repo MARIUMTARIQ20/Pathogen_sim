@@ -1,0 +1,6 @@
+Antibiotic,Pathogen_Type,Resistance_Percentage
+Methicillin,Staphylococcus aureus,85
+Vancomycin,Staphylococcus aureus,30
+Penicillin,Staphylococcus aureus,95
+Ciprofloxacin,Staphylococcus aureus,40
+Erythromycin,Staphylococcus aureus,70
