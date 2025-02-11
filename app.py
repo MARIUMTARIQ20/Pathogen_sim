@@ -97,6 +97,4 @@ with tab4:
     st.subheader("🌡️ Mortality vs Recovery Heatmap")
     fig = px.imshow(mortality_recovery.pivot(index="Date", columns="Hospital", values="Mortality"),
                     color_continuous_scale=px.colors.sequential.Plasma, title="Mortality Rate Heatmap")
-    st.plotly_chart(fig, use_container_width=True)
-
-st.success("✅ Dashboard Loaded Successfully with Fixed Hospital Names!")  
+    st.plotly_chart(fig, use_container_width=True) 
