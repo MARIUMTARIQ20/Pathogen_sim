@@ -1,53 +1,121 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import numpy as np
 
-# Load Data
-patients = pd.read_csv('patients_data.csv')
-hospitals = pd.read_csv('hospital_data.csv')
-antibiotic_resistance = pd.read_csv('antibiotic_resistance.csv')
-infection_spread = pd.read_csv('infection_spread.csv')
-mortality_recovery = pd.read_csv('mortality_recovery.csv')
+# Load Dataset
+@st.cache_data
+def load_data():
+    df = pd.read_csv("pathogen_data.csv")
+    return df
 
-# Fix Dates
-infection_spread["Date"] = pd.date_range(start="2024-06-01", periods=len(infection_spread), freq="D")
-infection_spread["Date"] = np.random.choice(infection_spread["Date"], size=len(infection_spread), replace=False)
+df = load_data()
 
-# Streamlit App
-st.set_page_config(page_title="Pathogen Sim Dashboard", layout="wide")
+# Ensure Data is Clean
+df = df.dropna(subset=["Hospital", "Number_of_Cases", "Date"])
+df["Number_of_Cases"] = pd.to_numeric(df["Number_of_Cases"], errors='coerce')
+df["Date"] = pd.to_datetime(df["Date"])
 
-# Custom Theme
-custom_colors = ["#FFB6C1", "#87CEEB", "#FFD700", "#98FB98"]
-st.markdown("<style>body { font-size: 16px; }</style>", unsafe_allow_html=True)
+# Streamlit Page Config
+st.set_page_config(page_title="Pathogen Sim", layout="wide")
 
-# Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Infection Trends", "🏥 Hospital Comparisons", "💊 Antibiotic Resistance", "🌡️ Mortality & Recovery"])
+# Sidebar Navigation
+st.sidebar.title("🔬 Pathogen Sim Dashboard")
+page = st.sidebar.radio("Go to", ["📈 Infection Trends", "🏥 Hospital Comparisons", "💊 Antibiotic Resistance", "☠️ Mortality & Recovery"])
 
-with tab1:
-    st.subheader("📈 Infection Spread Over Time")
-    fig = px.line(infection_spread, x="Date", y="Number_of_Cases", color="Hospital", 
-                  markers=True, title="Infection Cases Over Time",
-                  color_discrete_sequence=custom_colors)
-    fig.update_traces(mode="lines+markers", line_shape="spline")
+# Header
+st.title("🦠 Pathogen Sim - Infection Analysis Dashboard")
+
+# Infection Trends Page
+if page == "📈 Infection Trends":
+    st.subheader("📊 Infection Spread Over Time (Animated)")
+
+    fig = px.line(
+        df, 
+        x="Date", 
+        y="Number_of_Cases", 
+        color="Hospital",
+        markers=True,
+        title="Infection Cases Over Time",
+    )
+    fig.update_traces(line=dict(width=2))  # Adjust line width
+    fig.update_layout(
+        xaxis_title="Date",
+        yaxis_title="Number of Cases",
+        font=dict(size=14),  # Fix small fonts
+        template="plotly_white",
+    )
+    
     st.plotly_chart(fig, use_container_width=True)
 
-with tab2:
-    st.subheader("🏥 Infection Rates by Hospital")
-    fig = px.bar(hospitals, x="Name", y="Infection_Rate", color="Name",
-                 title="Hospital Infection Rates",
-                 color_discrete_sequence=custom_colors)
+# Hospital Comparisons Page
+elif page == "🏥 Hospital Comparisons":
+    st.subheader("🏥 Infection Rate by Hospital")
+    
+    hospital_cases = df.groupby("Hospital")["Number_of_Cases"].sum().reset_index()
+    
+    fig = px.bar(
+        hospital_cases, 
+        x="Hospital", 
+        y="Number_of_Cases",
+        color="Hospital",
+        title="Total Infection Cases Per Hospital",
+    )
+    fig.update_layout(
+        xaxis_title="Hospital",
+        yaxis_title="Total Cases",
+        font=dict(size=14),
+        template="plotly_white",
+    )
+    
     st.plotly_chart(fig, use_container_width=True)
 
-with tab3:
-    st.subheader("💊 Antibiotic Resistance Breakdown")
-    fig = px.pie(antibiotic_resistance, names="Antibiotic", values="Resistance_Percentage",
-                 title="Antibiotic Resistance Distribution",
-                 color_discrete_sequence=custom_colors)
-    st.plotly_chart(fig, use_container_width=True)
+# Antibiotic Resistance Page
+elif page == "💊 Antibiotic Resistance":
+    st.subheader("💊 Antibiotic Resistance Trends")
 
-with tab4:
-    st.subheader("🌡️ Mortality vs Recovery Heatmap")
-    fig = px.imshow(mortality_recovery.pivot(index="Date", columns="Hospital", values="Mortality_Rate"),
-                    color_continuous_scale=custom_colors[:3], title="Mortality Rate Heatmap")
-    st.plotly_chart(fig, use_container_width=True)
+    # Assuming "Antibiotic" column exists
+    if "Antibiotic" in df.columns:
+        antibiotic_resistance = df.groupby("Antibiotic")["Number_of_Cases"].sum().reset_index()
+        
+        fig = px.bar(
+            antibiotic_resistance, 
+            x="Antibiotic", 
+            y="Number_of_Cases",
+            color="Antibiotic",
+            title="Antibiotic Resistance Overview",
+        )
+        fig.update_layout(
+            xaxis_title="Antibiotic",
+            yaxis_title="Resistant Cases",
+            font=dict(size=14),
+            template="plotly_white",
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.warning("No Antibiotic Resistance Data Available.")
+
+# Mortality & Recovery Page
+elif page == "☠️ Mortality & Recovery":
+    st.subheader("☠️ Mortality vs. Recovery Rates")
+
+    # Assuming "Outcome" column exists
+    if "Outcome" in df.columns:
+        outcome_counts = df["Outcome"].value_counts().reset_index()
+        outcome_counts.columns = ["Outcome", "Count"]
+        
+        fig = px.pie(
+            outcome_counts, 
+            names="Outcome", 
+            values="Count",
+            title="Mortality & Recovery Distribution",
+            color="Outcome",
+        )
+        fig.update_layout(
+            font=dict(size=14),
+            template="plotly_white",
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.warning("No Mortality/Recovery Data Available.")
